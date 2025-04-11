@@ -1,4 +1,4 @@
-# Framework Design Visualization
+# Unify-Diffusion Framework Design Visualization
 
 Created By Zeng Zhiwen(zwzengi@Outlook.com)
 
