@@ -1,0 +1,70 @@
+trainer:
+
+    accelerator: 'gpu'
+    
+    max_epochs: 500
+    
+    devices: 1
+
+    enable_checkpointing: true
+    callbacks:
+            class_path: pytorch_lightning.callbacks.ModelCheckpoint
+            init_args:
+                monitor: val/loss
+                mode: min
+                save_top_k: 5
+            class_path: pytorch_lightning.callbacks.EarlyStopping
+            init_args:
+                monitor: val/loss
+                mode: min
+                patience: 60
+
+    logger:
+        class_path: pytorch_lightning.loggers.TensorBoardLogger
+        init_args:
+            save_dir: output
+            name: unify_diffusion_framework
+
+    accumulate_grad_batches: 2
+    
+data:
+    seq_len: 512 
+    subseq_density: .05
+    batch_size: 10
+    num_workers: 6
+    val_size: 128
+    data_path: "../data"
+    
+model:
+    val_steps: 32
+
+    val_batches: 64                 # 一段音频切分段数
+
+    lr: 0.0001
+
+    audio_features: 256
+
+    diffusion_args:
+        log_snr_scale: 5e0
+        log_snr_bound: 5e-2
+        std_data: .67
+
+    mode:
+        flow: "SDE"                  # { PFODE, SDE, SS }    SS means stochastic sampler
+        model: "VE"                  # { EDM, VP, VE }
+        diff: "Euler"                # { Euler, Heun }
+        sche: "VE"                   # { LAPLACE, EDM, VP, VE }
+
+    audio_feature_args:
+        scales: [4,4,3,2]
+        conv_expand: 4
+        seq_depth: 4
+        seq_expand: 4
+
+    denoiser_args:
+        h_dim: 128
+        expand: 2
+        depth: 4
+        cond_dim: 128
+        cond_depth: 4
+        mod_depth: 4
