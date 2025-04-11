@@ -1,3 +1,6 @@
+"""
+    zwzengi@Outlook.com
+"""
 from collections.abc import Callable
 from jaxtyping import Float
 from dataclasses import dataclass
