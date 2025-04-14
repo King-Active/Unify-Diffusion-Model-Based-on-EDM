@@ -29,5 +29,5 @@ class GatedLayer(nn.Module):
             :param A:   经过 label 和 t 调制后的音频 (B, A, L)
         """
         h, g = self.exp(torch.cat([X, A], dim=1)).chunk(2, dim=1)
-        h = h * F.silu(g) + g * F.silu(h)
+        h = self.gru(h) * F.silu(g) + self.gru(g) * F.silu(h)
         return self.out(h)
