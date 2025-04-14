@@ -47,7 +47,7 @@ class AudioFeatEncoder(nn.Module):
                     nn.Conv1d(dim_cur, dim_cur, 3,1,1, groups=dim_cur),  # Time Seq Fusing
                     nn.ReLU(),
                     nn.Conv1d(dim_cur, dim_cur * args.seq_expand*2, 1),               # for h & g
-                    minGRU(),
+                    minGRU(bi_dir=True),    # 翻转序列捕捉反向特征
                     nn.Conv1d(dim_cur*args.seq_expand, dim_cur, 1),
                 )
 
