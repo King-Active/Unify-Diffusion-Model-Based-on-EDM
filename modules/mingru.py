@@ -18,8 +18,9 @@ def min_gru( h, g ):
     return torch.exp(decrease + update)
 
 class minGRU(nn.Module):
-    def __init__(self):
+    def __init__(self, bi_dir = False):
         super().__init__()
+        self.bi_dir = bi_dir
 
     def forward(self, x):
         """
@@ -29,7 +30,10 @@ class minGRU(nn.Module):
         # suppose 不同特征通道遵循相同分布
         # so do   因此沿着特征拆分，一半作为门控 g，一半作为候选隐状态 h
         fore, back = x.chunk(2, dim=1)      # (B,H,L) --> (B,H/2,L)
-        return torch.cat([
-            min_gru(*fore.chunk(2, dim=1)),                  #  forward   (B,H/2,L) --> (B,H/4,L)
-            min_gru(*back.flip(2).chunk(2, dim=1)).flip(2),  #  backward  (B,H/2,L) --> (B,H/4,L)
-        ], dim=1)
+        if self.bi_dir:
+            return torch.cat([
+                min_gru(*fore.chunk(2, dim=1)),                  #  forward   (B,H/2,L) --> (B,H/4,L)
+                min_gru(*back.flip(2).chunk(2, dim=1)).flip(2),  #  backward  (B,H/2,L) --> (B,H/4,L)
+            ], dim=1)
+
+        return min_gru( fore, back )
