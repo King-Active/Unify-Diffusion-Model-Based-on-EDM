@@ -15,11 +15,12 @@ class GatedLayer(nn.Module):
             nn.SiLU(),
             ModConv(self.cond, nn.Conv1d(H * 2, H * 2, 1)),
         )
+        
         self.gru = nn.Sequential(
             ModConv(self.cond, nn.Conv1d(H, H, 3, 1, 1, groups=H)),
             nn.SiLU(),
             ModConv(self.cond, nn.Conv1d(H, H * 2, 1)),
-            minGRU(),
+            minGRU(bi_dir=True),
         )
         self.out = ModConv(self.cond, nn.Conv1d(H, h_dim * 2, 1))
 
