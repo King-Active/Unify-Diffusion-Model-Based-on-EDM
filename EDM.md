@@ -1,8 +1,7 @@
+
 ### <font size=6 color = '#402775'>前向：通用加噪公式与SDE的相互转化</font>
 
-
 从一个分布 $\mathbf{x_0}$ 到另一个分布 $\mathbf{x_t}$ 的桥梁，也即流（Flow）：$$ p(\pmb{x_t | x_0}) = \mathcal{N}(\pmb{x_t}; s(t)\pmb{x_0}, s^2(t)\sigma^2(t)\pmb{I}) \tag{1}$$<br>
-
 将公式（1）进行重参数化采样，这里的 $\sigma(t)$为噪声强度的相对系数，$s(t)\sigma(t)$ 为绝对噪声强度（即噪声实际标准差）：
 $$\mathbf{x_t} = s(t)\mathbf{x_0} +s(t)\sigma(t)\epsilon \tag{2}$$
 -  **$s(t)\mathbf{x_0}$ 为信息部分:**
@@ -12,7 +11,7 @@ $$\mathbf{x_t} = s(t)\mathbf{x_0} +s(t)\sigma(t)\epsilon \tag{2}$$
 -  **信噪比:**
 	$SNR(t)=\frac{\alpha}{\sigma^2(t)}$
 
-<br>
+
 为了适配EDM统一框架输入：
 
 $$
@@ -22,16 +21,16 @@ $$
 
 最终单步递推公式（见 #证明1 ）：
 $$
-\mathbf{x}_t=\frac{s(t)}{s(t-1)}\mathbf{x}_{t-1}+s(t)\sqrt{\sigma(t)^2-\sigma(t-1)^2}\boldsymbol{\epsilon}_t
+\mathbf{x}_t=\frac{s(t)}{s(t-1)}\mathbf{x}_{t-1}+s(t)\sqrt{\sigma(t)^2-\sigma(t-1)^2}{\epsilon}_t
 $$
 <br>
 具体地，可以得到各个版本扩散模型加噪公式，例如 DDPM ：
 
-$$\pmb{x_t} = \sqrt{1-\beta_t} \pmb{x_{t-1}}+\sqrt{\beta_t}\epsilon$$
+$$\mathbf{x_t} = \sqrt{1-\beta_t} \mathbf{x_{t-1}}+\sqrt{\beta_t}\epsilon$$
 
 其中，$s(t)=\sqrt{\bar{\alpha}_t},\quad\bar{\alpha}_t=\prod_{s=1}^t(1-\beta_s),\quad \sigma(t)=\sqrt{\frac{1-\bar{\alpha_t}}{\bar{\alpha}_t}}$   
 <br>
-对应的随机微分方程（SDE），形式如下：$$d{\pmb{x_t}} = f(t)\pmb{x}_tdt + g(t)dw_t \tag{3}$$
+对应的随机微分方程（SDE），形式如下：$$d{\mathbf{x_t}} = f(t)\mathbf{x}_tdt + g(t)dw_t \tag{3}$$
 <br>
 
 反之，递推式可通过求取极限（见 #证明2 ）得到公式（3），对应系数如下：
@@ -54,7 +53,8 @@ EDM概括了所有扩散模型中，神经网络部分的模型框架：
 $$
 D_\theta(\mathbf{\hat{x}};\sigma) = C_{skip}(\sigma)\mathbf{\hat{x}} + C_{out}(\sigma)F_\theta(C_{in}(\sigma)\mathbf{\hat{x}}; C_{nosie}(\sigma)) \tag{6}
 $$
-- $D_\theta(\pmb{\hat{x}};\sigma)$ 是接收一个规范化的噪声图片（即原始图片直接添加 $\sigma$ 水平的噪声，不进行尺度缩放），以及我们为其指定的噪声水平 $\sigma$ ，输出降噪后的“纯净图像”，但是直接训练一个纯净网络效果不佳，因此 $F_\theta$ （残差）才是真正的网络组成。
+- $D_\theta(\pmb{\hat{x}};\sigma)$ 是接收一个规范化后的噪声图片（即原始图片 $\mathbf{x}_0$ 直接添加 $\sigma$ 水平的噪声，不进行尺度缩放得到的 $\hat{\mathbf{x}}$），以及我们为其指定的噪声水平 $\sigma$ ，输出降噪后的“纯净图像”
+	- 但是直接训练一个纯净网络效果不佳，因此 $F_\theta$ （残差）才是真正的网络组成。
 	- $\hat{\mathbf{x}}=\frac{\mathbf{x}}{s(t)}$，用于统一所有模型的输入尺度
 - $C_{skip}$ , $C_{out}$： 纯净去噪网络 $D_\theta(\pmb{\hat{x}};\sigma)$ 的输出由噪声图片 $\pmb{\hat{x}}$ 和模型 $F_\theta$ 输出加权组成。
 - $C_{in}$：用于适配不同网络对标准输入$\pmb{\hat{x}}$ 的系数，如 $s(t)$。
@@ -88,7 +88,7 @@ $$
 - $Var(\mathbf{x}_0)=\sigma^2_{data}$ 
 -  $C_{in}$：保证神经网络的输入保持单位方差（式117）
 $$c_{in}(\sigma) = \frac{1}{\sqrt{\sigma^2 + \sigma_{data}^2}}$$
-- $C_{out}, C_{skip}$：保证训练目标保持方差恒为1，同时让$C^2_{out}$被最小化（式138、131）：$$
+- $C_{out}, C_{skip}$：保证训练目标保持方差恒为1，同时让$C^2_{out}$被最小化，防止模型误差被放大（式138、131）：$$
 \begin{gather*}
 C_{skip}(\sigma) = \frac{\sigma^2_{data}}{\sigma^2_{data} + \sigma^2}
 \\
@@ -102,9 +102,13 @@ $$
 \mathbb{E}(\mathcal{L})=1
 $$
 
-- $\sigma$：损失函数在加噪水平很低或很高情况下，损失函数均难以下降，因此损失（时间步）的选择如下：$$ln(\sigma) \sim \mathcal{N}(P_{mean}, P^2_{std})$$其中$P_{mean}=-1.2, P_{std}=1.2$
-
-- $\sigma_{data} = 0.5$
+- $\sigma$调度：EDM认为，损失函数在加噪水平很低或很高情况下，损失函数均难以下降，因此训练噪声调度的选择如下：$$ln(\sigma) \sim \mathcal{N}(P_{mean}, P^2_{std})$$其中$P_{mean}=-1.2, P_{std}=1.2$
+- 对于`VP`，其训练调度为面向`t`的均匀分布： $$
+\beta(t)=(\beta_{max}-\beta_{min})t+\beta_{min}, \quad t\sim\mathcal{U}(\epsilon_t,1)
+$$
+- 对于`VE`，其训练调度与EDM同样面对 $\sigma$ 进行，但是为均匀调度：$$
+  \ln(\sigma)\sim\mathcal{U}(\ln(\sigma_{min}),\ln(\sigma_{max}))
+  $$
 
 #### <font size=5  color='#402775'>VP</font>
 $$
@@ -114,6 +118,8 @@ $$
 $$
 \underbrace{\mathbb{E}_{\ln(\sigma) \sim \mathcal{U}( \ln(\sigma_{min}), \ln(\sigma_{max}))}}_{p_{train}} \mathbb{E}_{\mathbf{x_0}, \mathbf{n}} \Big[ \underbrace{\tfrac{1}{\sigma^2}}_{损失权重} \big\lVert D_\theta \big( \mathbf{x_0} + \mathbf{n}; \sigma \big) - \mathbf{x_0} \big\rVert^2_2 \Big]
 $$
+- 二者的损失权重均随噪声减小而增大，即后期精细降噪过程给与更多关注
+<br>
 
 $\hat{\mathbf{x}}=\mathbf{x_0}+\mathbf{n}=\frac{\mathbf{x}}{s(t)}$
 
@@ -122,11 +128,12 @@ $\hat{\mathbf{x}}=\mathbf{x_0}+\mathbf{n}=\frac{\mathbf{x}}{s(t)}$
 | **残差损失**       | $\|D_\theta(\mathbf{\hat{x}})-\mathbf{x}_0\|^2$       | 直接去噪      |
 | **噪声损失**       | $\|F_\theta(\mathbf{x})-\boldsymbol{\epsilon}\|^2$    | DDPM 类模型  |
 | **分数匹配**       | $\|N_\theta(\mathbf{x})-\nabla\log p(\mathbf{x})\|^2$ | 基于分数的生成模型 |
+- $D_\theta$ 是逐步去噪后的结果，可能导致误差积累，而直接预测比较简单的单步噪声分布 $F\theta$ 更为容易学习。
 <br>
 
 ## <font size=6 color = '#402775'>反向：通用推理过程</font>
-### <font size=5  color='#402775'>确定性过程</font>
-#### <font size=4.9  color='#402775'>通用 概率流常微分方差 PFODE</font>
+### <font size=4.9  color='#402775'>通用 概率流常微分方程 PFODE</font>
+
 🚩 通用反向：对于任意一个扩散模型加噪SDE（公式(3)），通过福克普朗克方程，可进一步推导出一个常微分方程（ODE），也叫概率流常微分方程（PFODE）：$$d{\pmb{x_t}} = \big[
 f(t)\pmb{x_t} - \frac{1}{2}g^2{(t)} \bigtriangledown_{\pmb{x_t}}logp_t(\pmb{x_t}) 
 \big]dt \tag{8}$$
@@ -143,7 +150,6 @@ $$
 -  $\mathbf{x}/s(t)$ 表示分布在此处的取值
 <br>
 
-
 $$
 \begin{gather*}
 \triangledown_\mathbf{x}\log p_t(\mathbf{x}_t)=\triangledown_\mathbf{x}\log s(t)^{-d}+\triangledown_\mathbf{x}\log [p_t(\frac{\mathbf{x}_t}{s(t)};\sigma(t))]=\triangledown_\mathbf{x}\log [p_t(\frac{\mathbf{x}_t}{s(t)};\sigma(t))]
@@ -152,7 +158,7 @@ $$
 \end{gather*}
 $$
 
-> 分数函数的方向由当前噪声图谱 $\mathbf{\hat{x}}$ 指向神经网络预测的真实的分布 $\mathcal{D}_\theta(\mathbf{\hat{x}};\sigma(t))$ 
+> 分数函数的方向由当前噪声图谱 $\mathbf{\hat{x}}$ （低概率密度）指向神经网络预测的真实的分布 $\mathcal{D}_\theta(\mathbf{\hat{x}};\sigma(t))$ （高概率密度）
   
 
 🚩通用反向：因此，在确定起点 $\mathbf{x_0}$ （前向）或 $\mathbf{x_N}$（逆向）前提下，式（8）解的分布 $p(\mathbf{x_t})$，即$\mathbf{x_t}$的边缘概率密度与加噪过程SDE求解得到的分布是完全相同：
@@ -164,7 +170,7 @@ $$
 
 <br>
 
-#### <font size=4.9  color='#402775'>通用确定性采样</font>
+### <font size=4.9  color='#402775'>通用确定性采样</font>
 
 公式（11）的 $\mathcal{D}_\theta$ 可用神经网络模拟，具体为公式（6），随后通过使用ODE求解器，如一阶Euler，二阶Heun，在给定起点 $\pmb{X_N}$ 下，逐步采样获得生成图像。**注意：训练过程的时间步和采样过程的时间步定义不同**，EDM采样过程的噪声水平定义为：
 $$
@@ -173,7 +179,7 @@ $$
 $$
 ### ![[Pasted image 20250329020258.png]]
 
-#### <font size=4.9  color='#402775'>通用 随机微分方程</font>
+### <font size=4.9  color='#402775'>通用 随机微分方程</font>
 
 🚩 通用：**逆向**随机形式 SDE 为：
 $$
@@ -190,7 +196,7 @@ $$
 
 <br>
 
-#注：下面可以忽略
+%% #注：下面可以忽略
 
 ~~🚩~~ 一般通用（结合前向、逆向）：结合热方程偏微分方程和福克普朗克方程：
 $$
@@ -218,14 +224,16 @@ $$
 - $$
 \sqrt{2\beta(t)}\sigma(t)\epsilon\sqrt{dt}=\sqrt{2\beta(t)}\pmb{n'}\sqrt{dt}  \tag{15}
 $$
-反向过程中，式（14）与式（15）分别进行着相同噪声水平的去噪和加噪过程， $\beta(t)$控制二者相对速率。
+反向过程中，式（14）与式（15）分别进行着相同噪声水平的去噪和加噪过程， $\beta(t)$控制二者相对速率。 %%
 
-#### <font size=4.9  color='#402775'>非通用 随机性采样</font>
+### <font size=4.9  color='#402775'>非通用 随机性采样</font>
 
 随机性采样过程方法众多，甚至和逆向SDE公式本身“关系不大”。EDM论文也表示它设计的机性采样过程不是一种通用的SDE求解器，而是一种面向扩散模型问题的垂类SDE求解器。EDM设计的随机性采样过程非常简单，其核心就是在确定性采样的基础上增加了 **“回退”** 操作，也即先对样本额外加噪，再采用ODE求解器采样获得下一个时间点的图像。这种回退操作可以有效修正前面迭代步骤产生的误差，所以通常相比PFODE的生成效果更好，但同时也要花费更多的采样步数。EDM提出的SDE采样器(求解器)基本算法流程如图所示:
 ![[Pasted image 20250327014703.png]]
 
-其间涉及多个超参数，均为实验性、经验性取值。
+-  **特点**：EDM采取 **加噪** 后立即利用最新状态计算梯度并更新，而欧拉离散化方法
+   采取先更新再叠加噪声，没有立刻更新梯度基准，导致离散误差在 $\Delta_t$ 较大时增大。
+<br>
 
 ### <font size=5  color='#402775'>VP (DDPM / DDIM)</font>
 
@@ -243,7 +251,7 @@ d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\mathbf{w}
 \end{gather*}
 $$
 对离散递推式取极限可以直接导出连续式（16）。
-VP一步加噪式中的 $\hat{\sigma}=\sqrt{1-\bar{\alpha}_t}$ 不是绝对噪声方差，下面的 $\sigma(t)$ 才是：
+VP一步加噪式中的 $\bar{\sigma}=\sqrt{1-\bar{\alpha}_t}$ 表示原框架下的图谱噪声，其融合了尺度缩放项 $s(t)$，而在同一框架下， $\sigma(t)$ 才是前向过程所叠加的噪声标准差：
 $$\begin{gather*}
 \bar{\sigma}(t)=\sqrt{1-\bar{\alpha_t}} \\
 s(t)=\sqrt{\bar{\alpha_t}} \\
@@ -292,6 +300,7 @@ d{\mathbf{x}} = [-g(t)^2\bigtriangledown_x \log p_t(\mathbf{x})]dt + g(t)d\mathb
  \tag{23}
  \end{gather*}
 $$
+<br>
 
 ## <font size=6 color = '#402775'>附录</font>
 
@@ -301,6 +310,8 @@ $$
  而VE中，$Var(x_t)=1-\alpha_t=\beta_t$ ，由于噪声水平逐步增大，因此方差是爆炸式增大的。
 
 
+<br>
+
 #### **【补充2】DDPM与VP的关系**
 ##### DDPM是VP的离散化形式
 
@@ -309,18 +320,42 @@ $$
 | VP SDE | $d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\mathbf{w}$                                                                                                                 |
 | DDPM   | $$ \begin{gather*} \mathbf{x}_t=\sqrt{1-\beta_t}\mathbf{x}_{t-1}+\sqrt{\beta_t}\epsilon \\ \mathbf{x_t}=\sqrt{\bar{\alpha}_t}\mathbf{x_0}+\sqrt{1-\bar{\alpha}_t}\epsilon\end{gather*} $$ |
 
-| 模型     | 反向采用公式                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 模型     | 反向采样公式                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | VP SDE | $d\mathbf{x}=[-\frac{1}{2}\beta(t)\mathbf{x}-\beta(t)\nabla_x\log p_t(x)]dt+\sqrt{\beta(t)}d\mathbf{\bar{w}}$                                                                                                                                                                                                                                                                                                                                |
 | DDPM   | $$\begin{gather*}\mathbf{x}_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left( \mathbf{x}_t - \beta_t \frac{\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)}{\sqrt{1-\bar{\alpha}_t}} \right) + \sqrt{\beta_t} \epsilon_t  \\  \mathbf{x}_{t-1} = \frac{1}{\sqrt{1-\beta_t}} \left( \mathbf{x}_t+\beta_t \frac{D_\theta(\frac{\mathbf{x}_t}{s(t)};\sigma(t))-\frac{\mathbf{x}_t}{s(t)}}{s(t)\sigma^2(t)} \right) + \sqrt{\beta_t} \epsilon_t\end{gather*} $$ |
+
 
 ##### **VP中的变量定义与转化**
 
 1.  $\alpha_t=1-\beta_t$
 2.  $\bar{\alpha_t}=\prod_{s=1}^{t}(1-\beta_s)$
-3.  $\bar{\sigma}(t)=s(t)\sigma(t)=\sqrt{1-\bar{\alpha_t}}$ ，即`t`时刻的图像噪声标准差，取值范围由$0 \rightarrow 1$ 。   
+
+ 在实践中，有如下近似：
+ $$
+\log\bar{\alpha}_t=\sum_{i=1}^t\log\alpha_i\approx\int_0^t\log(1-\beta_s)ds
+$$
+这里的 $\log(1-\beta_s)\approx-\beta_s$，表示在0处的泰勒展开
+因此
+$$
+\bar{\alpha}_t\approx\exp\left(-\int_0^t\beta_s ds\right)
+$$
+
+$\beta_t$ 在实践中被定义为时间线性函数
+$$
+\beta(t)=(\beta_{max}-\beta_{min})t+\beta_{min}
+$$
+$$
+\int_0^t\beta_s ds=\int_0^t\left(\beta_{\text{min}}+s(\beta_{\text{max}}-\beta_{\text{min}})\right)ds=\beta_{\text{min}}t+\frac{t^2}{2}(\beta_{\text{max}}-\beta_{\text{min}})
+$$
+故 
+$$
+\bar{\alpha_t}=exp(-\beta_{\text{min}}t+\frac{t^2}{2}(\beta_{\text{max}}-\beta_{\text{min}}))
+$$
+3.  $\bar{\sigma}(t)=s(t)\sigma(t)=\sqrt{1-\bar{\alpha_t}}$ ，即原框架下`t`时刻的图像噪声水平
 4.  $s(t)=\sqrt{\bar{\alpha_t}}$，与式（2）对应
-5.  $\sigma(t)=\frac{\sqrt{1-\bar{\alpha_t}}}{\sqrt{\bar{\alpha_t}}}$，与（2）对应
+5.  $\sigma(t)=\frac{\sqrt{1-\bar{\alpha_t}}}{\sqrt{\bar{\alpha_t}}}$，与式（2）对应
+<br>
 
 #### 【其他】
 
@@ -349,9 +384,9 @@ $w_t \sim \mathcal{N}(0,t)$ 是一个布朗运动（Wiener） 过程
 	- 重参数化展开：$d_w = \sqrt{d_t} \cdot \epsilon, \epsilon \sim \mathcal{N}(0,1)$ 
 
 ##### **3. EDM论文相关**
-<br>
 
-> Song et al. present a stochastic differential equation (SDE) that **maintains** the desired distributionp as sample x evolves over time
+
+> Song et al. present a stochastic differential equation (SDE) that **maintains** the desired distribution p as sample x evolves over time
 
 若一个SDE的解 $\mathbf{x}_t$ 的边际分布 $p_t$ 满足：
 $$
@@ -369,7 +404,7 @@ $$
 
 > To specify the ODE, we must first choose a schedule $\sigma(t)$ that defines the desired noise level at time t.
 
-在PFODE中，$\sigma(t)$  ​**直接表示 t 时刻数据的噪声水平（累积结果）​**，而非单步添加量。这样一来，在前向加噪训练时，针对某一时刻 $t$ 噪声水平 $\sigma(t)$，直接向 $\mathbf{x_0}$ 添加 $\mathcal{N} \sim (0,\sigma^2(t))$ 的高斯随机噪声即可。在反向降噪采样时，也可以直接告诉神经网络当前图像的噪声水平 $\sigma(t)$，从而做出相应力度的降噪操作。
+在PFODE中，$\sigma(t)$  ​**直接表示 t 时刻数据的噪声水平（累积结果）​**，而非单步添加量。这样一来，在前向加噪训练时，针对某一时刻 $t$ 噪声水平 $\sigma(t)$，直接向 $\mathbf{x_0}$ 添加 $\mathcal{N} \sim (0,\sigma^2(t))$ 的高斯随机噪声即可。在反向降噪采样时，也可以直接告诉神经网络当前图像的噪声水平 $\sigma(t)$，从而做出**相应力度**的降噪操作。
 <br>
 >The score function has the remarkable property that it does not depend on the generally intractable normalization constant of the underlying density function $p(\mathbf{x};\sigma)$
 
@@ -409,6 +444,7 @@ $$
 - 限制噪声添加的时机范围 $t_i\in[S_{t_{min}},S_{t_{max}}]$
 - 使得每次添加随机噪声的水平$S_{noise}$ 略微大于1抵消细节损失
 - 确保每次新增噪声的强度不超过当前图像的噪声水平，防止过度破坏结构
+<br>
 
 #### **【证明1】前向离散一步加噪式（2）转化为离散单步递推式**
 
@@ -442,6 +478,7 @@ $$
 $$
 \mathbf{x}_t=\frac{s(t)}{s(t-1)}\mathbf{x}_{t-1}+s(t)\sqrt{\sigma(t)^2-\sigma(t-1)^2}\boldsymbol{\epsilon}_t \tag{24}
 $$
+<br>
 
 #### **【证明2】前向加噪离散形式到连续形式的转化**
 
@@ -464,7 +501,7 @@ $$
 $$
 \left(\frac{s(t)}{s(t-\Delta t)} - 1\right) \approx \frac{s'(t)}{s(t)}\Delta t
 $$
-当$\Delta t \to 1$有：
+当$\Delta t \to 1$令：
 $$
 f(t)=\left(\frac{s(t)}{s(t-1)} - 1\right) \approx \frac{s'(t)}{s(t)}
 $$
@@ -483,12 +520,14 @@ $$
 g(t)=s(t)\sqrt{\sigma(t)^2-\sigma(t-1)^2}\boldsymbol{\epsilon}_t=s(t)\sqrt{2\sigma(t)\sigma'(t)}
 $$
 
+<br>
+
 #### **【证明3】VE 前向离散形式推导**
 
 $$
 dx=\sqrt{\frac{d^2\sigma(t)}{dt}}dw_t
 $$
-由欧拉离散化 $x_t=x_{t-1}+dx(t-1)$ :$$
+由**欧拉离散化** $x_t=x_{t-1}+dx(t-1)$ :$$
 x_t=x_{t-1}+\sqrt{\frac{\sigma^2(t)-\sigma^2(t-\Delta t)}{\Delta t}}\sqrt{\Delta t}\epsilon
 $$令$\Delta t=1$得：$$
 x_t=x_{t-1}+\sqrt{\sigma^2(t)-\sigma^2(t-1)}\epsilon
@@ -496,6 +535,8 @@ $$由迭代求和可得：$$
 x_t=x_0+\sigma(t)\epsilon
 $$特别地，$\sigma(t)=\sigma_{min}(\frac{\sigma_{max}}{\sigma_{min}})^t$ ，其中$t\sim\mathcal{U}(0,1)$
 也可由式（24）通式带入相关项得到。
+
+<br>
 
 #### **【证明4】VP 前向离散形式推导**
 
@@ -523,43 +564,8 @@ $$
 特别地，$\beta(t)=(\beta_{max}-\beta_{min})t+\beta_{min}$ ，其中，$t\sim\mathcal{U}(\epsilon_t,1)$
 
 
-#### **【证明5】VE 反向形式离散化推导过程**
-
-由VE反向连续SDE形式：
-$$
-d\mathbf{x}=\sqrt{\frac{d\sigma^2(t)}{dt}}dw_t
-$$
-可知
-$$
-g(t)=\sqrt{\frac{d\sigma^2(t)}{dt}}
-$$
-对VE反向SDE连续形式欧拉离散化：
-$$
-d{\mathbf{x}} = [-g(t)^2\bigtriangledown_x \log p_t(\mathbf{x})]dt + g(t)d\mathbf{w} 
-$$
-$$
-\mathbf{x}_{t-1}=\mathbf{x}_{t}+d\mathbf{x}_{t}=\mathbf{x}_{t}+\frac{d^2\sigma_t}{dt}\cdot\frac{\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)}{\bar{\sigma_t}}+\sqrt{\frac{d^2\sigma_t}{dt}}\sqrt{dt}\epsilon_t
-$$
-进一步，令$\Delta t=1$：
-$$
-\mathbf{x}_{t-1}=\mathbf{x}_{t}+\frac{\sigma^2_t-\sigma^2_{t-1}}{\bar{\sigma}_t}\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
-$$
-由于 $\bar{\sigma}(t)=\sigma(t)$ ，因此：
-
-**噪声预测形式：**
-$$
-\mathbf{x}_{t-1}=\mathbf{x}_{t}+\frac{\sigma^2_t-\sigma^2_{t-1}}{\sigma_t}\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
-$$
-**残差预测形式：**
-$$
-\mathbf{x}_{t-1}=\mathbf{x}_{t}-(\sigma^2_t-\sigma^2_{t-1})\frac{1}{s(t)\sigma^2(t)}(D_\theta(\frac{\mathbf{x}_t}{s(t)};\sigma(t))-\frac{\mathbf{x}_t}{s(t)})+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
-$$
-由于 $s(t)=1$，有:
-$$
-\mathbf{x}_{t-1}=\mathbf{x}_{t}-\frac{(\sigma^2_t-\sigma^2_{t-1})}{\sigma^2_t}(D_\theta(\mathbf{x}_t;\sigma_t)-\mathbf{x}_t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
-$$
-
-#### **【证明6】VP 反向形式离散化为DDPM推导过程**
+<br>
+#### **【证明5】VP 反向形式离散化为DDPM推导过程**
 
 给定**VP逆向SDE**：
 $$
@@ -615,5 +621,69 @@ $$
 $$
 \mathbf{x}_{t-1} = \frac{1}{\sqrt{1-\beta_t}} \left( \mathbf{x}_t+\beta_t \frac{D_\theta(\frac{\mathbf{x}_t}{s(t)};\sigma(t))-\frac{\mathbf{x}_t}{s(t)}}{s(t)\sigma^2(t)} \right) + \sqrt{\beta_t} \epsilon_t
 $$
+<br>
 
 
+#### **【证明6】VE 反向形式离散化推导过程**
+
+由VE反向连续SDE形式：
+$$
+d\mathbf{x}=\sqrt{\frac{d\sigma^2(t)}{dt}}dw_t
+$$
+可知
+$$
+g(t)=\sqrt{\frac{d\sigma^2(t)}{dt}}
+$$
+对VE反向SDE连续形式欧拉离散化：
+$$
+d{\mathbf{x}} = [-g(t)^2\bigtriangledown_x \log p_t(\mathbf{x})]dt + g(t)d\mathbf{w} 
+$$
+$$
+\mathbf{x}_{t-1}=\mathbf{x}_{t}+d\mathbf{x}_{t}=\mathbf{x}_{t}+\frac{d^2\sigma_t}{dt}\cdot\frac{\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)}{\bar{\sigma_t}}+\sqrt{\frac{d^2\sigma_t}{dt}}\sqrt{dt}\epsilon_t
+$$
+进一步，令$\Delta t=1$：
+$$
+\mathbf{x}_{t-1}=\mathbf{x}_{t}+\frac{\sigma^2_t-\sigma^2_{t-1}}{\bar{\sigma}_t}\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
+$$
+由于 $\bar{\sigma}(t)=\sigma(t)$ ，因此：
+
+**噪声预测形式：**
+$$
+\mathbf{x}_{t-1}=\mathbf{x}_{t}+\frac{\sigma^2_t-\sigma^2_{t-1}}{\sigma_t}\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
+$$
+**残差预测形式：**
+$$
+\mathbf{x}_{t-1}=\mathbf{x}_{t}-(\sigma^2_t-\sigma^2_{t-1})\frac{1}{s(t)\sigma^2(t)}(D_\theta(\frac{\mathbf{x}_t}{s(t)};\sigma(t))-\frac{\mathbf{x}_t}{s(t)})+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
+$$
+由于 $s(t)=1$，有:
+$$
+\mathbf{x}_{t-1}=\mathbf{x}_{t}-\frac{(\sigma^2_t-\sigma^2_{t-1})}{\sigma^2_t}(D_\theta(\mathbf{x}_t;\sigma_t)-\mathbf{x}_t)+\sqrt{\sigma^2_t-\sigma^2_{t-1}}\epsilon_t
+$$
+
+<br>
+
+#### 实践
+
+##### **VP**
+
+- 训练
+	-  时间调度： $t\sim\mathcal{U}(\epsilon_t,1)$
+	-  噪声调度：$\sigma(t)=\sqrt{e^{\frac{1}{2}\beta_dt^2+\beta_{min}t}-1}$
+	-  损失权重：$\lambda(\sigma)=\frac{1}{\sigma^2}$
+- 采样
+	- 时间调度：$t\sim1+\frac{i}{N-1}(\epsilon_s-1)$
+	- 噪声调度：$\sigma(t)=\sqrt{e^{\frac{1}{2}\beta_dt^2+\beta_{min}t}-1}$
+
+
+##### **VE**
+
+- 训练
+	-  时间调度： $t\sim\mathcal{U}(\ln(\sigma_{min}),\ln(\sigma_{max}))$
+	-  噪声调度：$\sigma(t)=\sigma_{min}(\frac{\sigma_{max}}{\sigma_{min}})^t$，人为定义
+	-  损失权重：$\lambda(\sigma)=\frac{1}{\sigma^2}$
+- 采样
+	- 时间调度：$t\sim\sigma^2_{max}(\frac{\sigma^2_{min}}{\sigma^2_{max}})^{\frac{i}{N-1}}$
+	- 噪声调度：$\sqrt{t}$ ，理论值
+
+VE、EDM采用的是基于sigma的均匀分布采样训练，需要避免极端噪声
+VP采用的是基于时间均匀分布的采样训练，可以覆盖全部时间范围
