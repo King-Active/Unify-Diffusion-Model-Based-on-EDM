@@ -11,13 +11,14 @@ from .diffusion import UnifyDiffusionFramework, DiffusionArgs, Mode
 from .denoiser import Denoiser, DenoiserArgs
 from .audio_encoder import AudioFeatEncoder, AudioFeatureArgs
 
-    
+# loss: str  # { Residual, Noise }
+
 class Model(pl.LightningModule):
     def __init__(
         self,
         val_batches,
         val_steps,
-        lr,
+        opt_args,
         audio_features,
         diffusion_args: DiffusionArgs,
         mode: Mode,
@@ -33,7 +34,8 @@ class Model(pl.LightningModule):
 
         self.val_batches = val_batches
         self.val_steps = val_steps
-        self.lr = lr
+        self.opt_args = opt_args
+        self.mode = mode
     
 
     def forward(self, audio, chart, labels):
@@ -45,17 +47,34 @@ class Model(pl.LightningModule):
         # set audio feat encoder + labels
         denoiser = partial(self.denoiser, a=self.audio_encoder(audio), label=labels)
 
-        pred, lambda_sigma = self.diffusion.training_sample(denoiser, chart)
-
         # --- Loss Function ---
-        # time
-        time_loss = (lambda_sigma * (pred - chart) ** 2).mean()
+        if self.mode.loss == 'Residual':
 
-        # space
-        true_diff = chart[:, CursorSignals, 1:] - chart[:, CursorSignals, :-1]
-        pred_diff = pred[:, CursorSignals, 1:] - pred[:, CursorSignals, :-1]
-        cd_map = lambda diff: torch.tanh(diff * 20)
-        space_loss = (lambda_sigma * (cd_map(true_diff) - cd_map(pred_diff)) ** 2).mean()
+            pred, lambda_sigma = self.diffusion.training_sample(denoiser, chart)
+
+            # time
+            time_loss = (lambda_sigma * (pred - chart) ** 2).mean()
+
+            # space
+            true_diff = chart[:, CursorSignals, 1:] - chart[:, CursorSignals, :-1]
+            pred_diff = pred[:, CursorSignals, 1:] - pred[:, CursorSignals, :-1]
+            cd_map = lambda diff: torch.tanh(diff * 20)
+            space_loss = (lambda_sigma * (cd_map(true_diff) - cd_map(pred_diff)) ** 2).mean()
+
+        else:
+            f_theta, c_out, c_skip, lambda_sigma, n = self.diffusion.training_sample(denoiser, chart)
+
+            # noise in time
+            time_loss = (lambda_sigma * (c_out ** 2) *
+                            ( f_theta - (1 / c_out) * (chart - c_skip * (chart + n))) ** 2 ).mean()
+
+            # noise in space
+            space_diff = chart[:, CursorSignals, 1:] - chart[:, CursorSignals, :-1]
+            pred_space_diff = f_theta[:, CursorSignals, 1:] - f_theta[:, CursorSignals, :-1]  # 这里是关于差异的噪声
+            cd_map = lambda diff: torch.tanh(diff * 20)
+            space_loss = (lambda_sigma * (c_out ** 2) *
+                            ( cd_map(pred_space_diff) - (1 / c_out) *
+                            ( cd_map(space_diff) - c_skip * ( cd_map(space_diff) + (n[:, CursorSignals, 1:] - n[:, CursorSignals, :-1])))) ** 2 ).mean()
 
         loss = time_loss + 0.01 * space_loss
 
@@ -89,7 +108,7 @@ class Model(pl.LightningModule):
         ).clamp(min=-1, max=1)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), self.lr)
+        return torch.optim.Adam(self.parameters(),**self.opt_args)
 
     def training_step(self, batch: Batch, batch_idx):
         loss, log_dict = self(*batch)
