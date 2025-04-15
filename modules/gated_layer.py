@@ -28,6 +28,6 @@ class GatedLayer(nn.Module):
             :param X:   噪声图谱  (B, h_dim, L)
             :param A:   经过 label 和 t 调制后的音频 (B, A, L)
         """
-        h, g = self.exp(torch.cat([X, A], dim=1))
+        h, g = self.exp(torch.cat([X, A], dim=1)).chunk(2, dim=1)
         h = self.gru(h) * F.silu(g) + self.gru(g) * F.silu(h)
         return self.out(h)
