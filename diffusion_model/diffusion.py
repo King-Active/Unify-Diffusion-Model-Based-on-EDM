@@ -1,6 +1,3 @@
-"""
-    zwzengi@Outlook.com
-"""
 from collections.abc import Callable
 from jaxtyping import Float
 from dataclasses import dataclass
@@ -22,6 +19,7 @@ class Mode:
     model: str                  # { EDM, VP, VE }
     diff: str                   # { Euler, Heun }
     sche: str                   # { LAPLACE, EDM, VP, VE }
+    loss: str                   # { Residual, Noise }
 
 class UnifyDiffusionFramework:
 
@@ -159,8 +157,11 @@ class UnifyDiffusionFramework:
             c_noise = torch.log(0.5 * sigma)[:, 0, 0]
 
         # model --> F_theta
-        pred_x0 = c_skip * x_hat + c_out * model( x = c_in * x_hat, t = c_noise )
-        return pred_x0
+        if self.mode.loss == 'Residual':
+            pred_x0 = c_skip * x_hat + c_out * model( x = c_in * x_hat, t = c_noise )
+            return pred_x0
+        else:
+            return model( x = c_in * x_hat, t = c_noise ), c_out, c_skip
 
     def training_sample(self, model: Denoiser, x0: X):
 
@@ -176,9 +177,14 @@ class UnifyDiffusionFramework:
         elif self.mode.model == 'VE':
             lambda_sigma = 1 / sigma ** 2
 
-        x_hat = x0 + torch.randn_like(x0) * sigma
+        n = torch.randn_like(x0) * sigma
+        x_hat = x0 + n
 
-        return self.d_model(model, x_hat, sigma, t), lambda_sigma
+        if self.mode.loss == 'Residual':
+            return self.d_model(model, x_hat, sigma, t), lambda_sigma
+        else:
+            f_theta, c_out, c_skip = self.d_model(model, x_hat, sigma, t)
+            return f_theta, c_out, c_skip, lambda_sigma, n
 
     def inferring_sample(self, model: Denoiser, x_hat: X, sigma: T, t) -> X:
         return self.d_model(model, x_hat, sigma, t)
